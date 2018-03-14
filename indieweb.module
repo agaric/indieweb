@@ -1,0 +1,408 @@
+<?php
+
+/**
+ * @file
+ * Indieweb functionality.
+ */
+
+use Drupal\comment\Entity\Comment;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Site\Settings;
+use Drupal\Core\Url;
+use Drupal\indieweb\Entity\WebmentionEntityInterface;
+use Drupal\node\Entity\NodeType;
+use Drupal\node\NodeInterface;
+use IndieWeb\MentionClient;
+
+/**
+ * Implements hook_page_attachments_alter().
+ */
+function indieweb_page_attachments_alter(array &$attachments) {
+
+  // Add webmention and pingback rel links.
+  $route = \Drupal::routeMatch()->getRouteObject();
+  $is_admin = \Drupal::service('router.admin_context')->isAdminRoute($route);
+  if (!$is_admin) {
+
+    $config = \Drupal::config('indieweb.webmention');
+    if ($config->get('webmention_enable') && ($end_point = $config->get('webmention_endpoint'))) {
+      $link = [
+        '#tag' => 'link',
+        '#attributes' => [
+          'rel' => 'webmention',
+          'href' => $end_point,
+        ],
+      ];
+      $attachments['#attached']['html_head'][] = [$link, 'webmention'];
+    }
+
+    if ($config->get('pingback_enable') && ($end_point = $config->get('pingback_endpoint'))) {
+      $link = [
+        '#tag' => 'link',
+        '#attributes' => [
+          'rel' => 'pingback',
+          'href' => $end_point,
+        ],
+      ];
+      $attachments['#attached']['html_head'][] = [$link, 'pingback'];
+    }
+  }
+
+  if (\Drupal::service('path.matcher')->isFrontPage()) {
+
+    // IndieAuth Authentication endpoints.
+    if (($config = \Drupal::config('indieweb.indieauth')) && ($config->get('enable')) && ($config->get('expose'))) {
+
+      if ($end_point = $config->get('authorization_endpoint')) {
+        $link = [
+          '#tag' => 'link',
+          '#attributes' => [
+            'rel' => 'authorization_endpoint',
+            'href' => $end_point,
+          ],
+        ];
+        $attachments['#attached']['html_head'][] = [
+          $link,
+          'authorization_endpoint'
+        ];
+      }
+
+      if ($end_point = $config->get('token_endpoint')) {
+        $link = [
+          '#tag' => 'link',
+          '#attributes' => [
+            'rel' => 'token_endpoint',
+            'href' => $end_point,
+          ],
+        ];
+        $attachments['#attached']['html_head'][] = [
+          $link,
+          'token_endpoint'
+        ];
+      }
+    }
+
+    // Micropub.
+    if (($config = \Drupal::config('indieweb.micropub')) && ($config->get('micropub_enable')) && $config->get('micropub_add_header_link')) {
+
+      $link = [
+        '#tag' => 'link',
+        '#attributes' => [
+          'rel' => 'micropub',
+          'href' => Url::fromRoute('indieweb.micropub.endpoint', [], ['absolute' => TRUE])->toString(),
+        ],
+      ];
+
+      $attachments['#attached']['html_head'][] = [
+        $link,
+        'micropub_endpoint'
+      ];
+    }
+  }
+
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for \Drupal\node\NodeForm.
+ *
+ * Adds indieweb functionality to node forms.
+ */
+function indieweb_form_node_form_alter(&$form, FormStateInterface $form_state) {
+
+  // TODO configure per node type / entity type
+  $node = $form_state->getFormObject()->getEntity();
+  if ($node) {
+
+    $channels = indieweb_get_publishing_channels();
+    if (!empty($channels)) {
+
+      $form['indieweb'] = [
+        '#type' => 'details',
+        '#title' => t('Publish to'),
+        '#access' => \Drupal::currentUser()->hasPermission('send webmentions'),
+        '#group' => 'advanced',
+        '#weight' => 100,
+      ];
+
+      $form['indieweb']['indieweb_publish_channels'] = [
+        '#type' => 'checkboxes',
+        '#options' => indieweb_get_publishing_channels(),
+        '#default_value' => FALSE,
+      ];
+
+      foreach (array_keys($form['actions']) as $action) {
+        if ($action != 'preview' && isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] === 'submit') {
+          $form['actions'][$action]['#submit'][] = 'indieweb_form_node_form_submit';
+        }
+      }
+    }
+  }
+
+}
+
+/**
+ * Form submission handler for indieweb.
+ *
+ * @param $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *
+ * @see indieweb_form_node_form_alter()
+ */
+function indieweb_form_node_form_submit($form, FormStateInterface $form_state) {
+  /** @var \Drupal\node\NodeInterface $node */
+  $node = $form_state->getFormObject()->getEntity();
+  if ($node->isPublished()) {
+
+    $source_url = $node->toUrl()->setAbsolute(TRUE)->toString();
+    $publish_to = $form_state->getValue('indieweb_publish_channels');
+    if (!empty($publish_to)) {
+      foreach ($publish_to as $key => $value) {
+        if ($key === $value) {
+          indieweb_publish_create_queue_item($source_url, $key);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_node().
+ */
+function indieweb_preprocess_node(&$variables) {
+  if (($variables['view_mode'] == 'full' || $variables['view_mode'] == 'teaser') && \Drupal::config('indieweb.microformats')->get('h_entry')) {
+    $variables['attributes']['class'][] = 'h-entry';
+  }
+}
+
+/**
+ * Implements hook_preprocess_field().
+ */
+function indieweb_preprocess_field(&$variables) {
+
+  // Put e-content on body.
+  if ($variables['field_name'] == 'body' && \Drupal::config('indieweb.microformats')->get('e_content')) {
+    $variables['attributes']['class'][] = 'e-content';
+  }
+
+  // In case there's a p-summary.
+  if (in_array($variables['field_name'], indieweb_get_summary_fields())) {
+    $variables['attributes']['class'][] = 'p-summary';
+  }
+}
+
+/**
+ * Implements hook_preprocess_image_style().
+ *
+ * @param $variables
+ */
+function indieweb_preprocess_image_style(&$variables) {
+  if (\Drupal::config('indieweb.microformats')->get('u_photo')) {
+    $variables['image']['#attributes']['class'][] = 'u-photo';
+  }
+}
+
+/**
+ * Implements hook_entity_extra_field_info().
+ */
+function indieweb_entity_extra_field_info() {
+  $extra = [];
+
+  $channels = indieweb_get_publishing_channels();
+  if (!empty($channels)) {
+    foreach (NodeType::loadMultiple() as $bundle) {
+      foreach ($channels as $url => $name) {
+        $machine_name = indieweb_get_machine_name_from_url($url);
+        $extra['node'][$bundle->id()]['display'][$machine_name] = [
+          'label' => $name,
+          'weight' => 0,
+          'visible' => FALSE,
+        ];
+      }
+
+    }
+  }
+
+  return $extra;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for node entities.
+ */
+function indieweb_node_view(array &$build, NodeInterface $account, EntityViewDisplayInterface $display) {
+  $channels = indieweb_get_publishing_channels();
+  if (!empty($channels)) {
+    foreach ($channels as $url => $name) {
+      $machine_name = indieweb_get_machine_name_from_url($url);
+      if ($display->getComponent($machine_name)) {
+        $build[$machine_name] = [
+          '#markup' => '<span class="hidden"><a href="' . $url . '"></a></span>',
+        ];
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ */
+function indieweb_webmention_entity_insert(WebmentionEntityInterface $webmention) {
+
+  if (
+    Settings::get('indieweb_webmention_create_comment', FALSE) &&
+    !empty(Settings::get('indieweb_comment_type', '')) &&
+    !empty(Settings::get('indieweb_comment_webmention_reference_field', '')) &&
+    !empty(Settings::get('indieweb_node_comment_field')) &&
+    $webmention->get('property')->value == 'in-reply-to' &&
+    !empty($webmention->get('content_text')->value)) {
+
+    // TODO - we have the same code in WebmentionController::clearCache to get
+    // an entity make a helper function/method.
+    $path = \Drupal::service('path.alias_manager')->getPathByAlias($webmention->get('target')->value);
+    try {
+      $params = Url::fromUri("internal:" . $path)->getRouteParameters();
+      if (!empty($params) && key($params) == 'node') {
+        $entity_type = key($params);
+
+        $storage = \Drupal::entityTypeManager()->getStorage($entity_type);
+        if ($storage) {
+
+          $comment_type = Settings::get('indieweb_comment_type', '');
+          $comment_comment_webmention_field_name = Settings::get('indieweb_comment_webmention_reference_field', '');
+          $comment_node_comment_field_name = Settings::get('indieweb_node_comment_field', '');
+
+          /** @var \Drupal\node\NodeInterface $node */
+          $node = $storage->load($params[$entity_type]);
+          if ($node && $node->hasField($comment_node_comment_field_name) && $node->{$comment_node_comment_field_name}->status == 2) {
+
+            $subject = 'Auto created comment from webmention';
+
+            $values = [
+              'subject' => $subject,
+              'status' => Settings::get('indieweb_comment_status', 0),
+              'entity_id' => $node->id(),
+              'entity_type' => 'node',
+              'comment_type' => $comment_type,
+              'field_name' => $comment_node_comment_field_name,
+              $comment_comment_webmention_field_name => [
+                'target_id' => $webmention->id(),
+              ]
+            ];
+
+            // Match authors if possible.
+            $authors = Settings::get('indieweb_comment_authors', []);
+            $author_name = $webmention->get('author_name')->value;
+            $values['name'] = $author_name;
+            if (isset($authors[$author_name])) {
+              $values['uid'] = $authors[$author_name];
+            }
+
+            $comment = Comment::create($values);
+            $comment->save();
+
+          }
+        }
+      }
+    }
+    catch (Exception $e) {
+      \Drupal::logger('indieweb')->notice('Failed to create a comment: @message', ['@message' => $e->getMessage()]);
+    }
+  }
+
+}
+
+/**
+ * Implements hook_cron().
+ */
+function indieweb_cron() {
+  if (\Drupal::config('indieweb.publish')->get('publish_send_webmention_by') == 'cron') {
+    indieweb_handle_publish_queue();
+  }
+}
+
+/**
+ * Returns the publishing channels.
+ *
+ * @return array
+ */
+function indieweb_get_publishing_channels() {
+  $channels = [];
+  $config = \Drupal::config('indieweb.publish')->get('channels');
+  if (!empty($config)) {
+    $lines = explode("\n", $config);
+    foreach ($lines as $line) {
+      $line = trim($line);
+      if (!empty($line)) {
+        $name_url = explode('|', $line);
+        if (!empty($name_url[0]) && !empty($name_url[1])) {
+          $channels[$name_url[1]] = $name_url[0];
+        }
+      }
+    }
+  }
+
+  return $channels;
+}
+
+/**
+ * Creates a publish queue item.
+ *
+ * @param $source_url
+ * @param $target_url
+ *
+ * @throws \Exception
+ */
+function indieweb_publish_create_queue_item($source_url, $target_url) {
+  \Drupal::database()->insert('queue')
+    ->fields(['name' => 'indieweb_publish', 'data' => serialize(['source_url' => $source_url, 'target_url' => $target_url])])
+    ->execute();
+}
+
+/**
+ * Handles the publish queue.
+ */
+function indieweb_handle_publish_queue() {
+  $query = 'SELECT * FROM queue WHERE name = :name';
+  $results = \Drupal::database()->query($query, [':name' => 'indieweb_publish']);
+  foreach ($results as $result) {
+
+    $data = unserialize($result->data);
+    if (!empty($data['source_url']) && !empty($data['target_url'])) {
+      $sourceURL = $data['source_url'];
+      $targetURL = $data['target_url'];
+      $client = new MentionClient();
+      $client->sendWebmention($sourceURL, $targetURL);
+    }
+
+    // Remove the item.
+    \Drupal::database()->delete('queue')->condition('item_id', $result->item_id)->execute();
+  }
+}
+
+/**
+ * Sanitizes a url to use as a machine name.
+ *
+ * @param $url
+ *
+ * @return string
+ */
+function indieweb_get_machine_name_from_url($url) {
+  return 'indieweb_' . str_replace(['https://', 'http://', '/', '-', '.'], '', $url);
+}
+
+/**
+ * Get summary fields for microformats.
+ *
+ * @return array
+ */
+function indieweb_get_summary_fields() {
+  static $fields = [];
+  static $loaded = FALSE;
+
+  if (!$loaded) {
+    $loaded = TRUE;
+    $fields = explode("\n", \Drupal::config('indieweb.microformats')->get('p_summary'));
+  }
+
+  return $fields;
+}

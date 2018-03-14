@@ -1,0 +1,55 @@
+indieweb.admin.dashboard:
+  title: 'Indieweb'
+  route_name: indieweb.admin.dashboard
+  base_route: indieweb.admin.dashboard
+
+indieweb.admin.webmention_settings:
+  title: 'Webmention'
+  route_name: indieweb.admin.webmention_settings
+  base_route: indieweb.admin.dashboard
+
+indieweb.admin.publish_settings:
+  title: 'Publish'
+  route_name: indieweb.admin.publish_settings
+  base_route: indieweb.admin.dashboard
+
+indieweb.admin.microformats_settings:
+  title: 'Microformats'
+  route_name: indieweb.admin.microformats_settings
+  base_route: indieweb.admin.dashboard
+
+indieweb.admin.micropub_settings:
+  title: 'Micropub'
+  route_name: indieweb.admin.micropub_settings
+  base_route: indieweb.admin.dashboard
+
+indieweb.admin.indieauth_settings:
+  title: 'IndieAuth'
+  route_name: indieweb.admin.indieauth_settings
+  base_route: indieweb.admin.dashboard
+
+webmention_entity.list_tab:
+  title: 'Webmentions'
+  route_name: entity.webmention_entity.collection
+  base_route: system.admin_content
+
+webmention_entity.settings_tab:
+  title: 'Settings'
+  route_name: webmention_entity.settings
+  base_route: webmention_entity.settings
+
+entity.webmention_entity.canonical:
+  title: 'View'
+  route_name: entity.webmention_entity.canonical
+  base_route: entity.webmention_entity.canonical
+
+entity.webmention_entity.edit_form:
+  title: 'Edit'
+  route_name: entity.webmention_entity.edit_form
+  base_route: entity.webmention_entity.canonical
+
+entity.webmention_entity.delete_form:
+  title: 'Delete'
+  route_name:  entity.webmention_entity.delete_form
+  base_route:  entity.webmention_entity.canonical
+  weight: 10
