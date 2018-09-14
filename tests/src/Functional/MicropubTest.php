@@ -237,7 +237,7 @@ class MicropubTest extends IndiewebBrowserTestBase {
     }
 
     // Test update.
-    $update = [
+    /*$update = [
       'action' => 'update',
       'url' => $node->toUrl('canonical', ['absolute' => TRUE])->toString(),
       'replace' => [
@@ -245,7 +245,7 @@ class MicropubTest extends IndiewebBrowserTestBase {
       ],
     ];
     $code = $this->sendMicropubRequest($update, 'is_in_valid', FALSE, 'json');
-    self::assertEquals(403, $code);
+    self::assertEquals(403, $code);*/
 
     $update = [
       'action' => 'update',
