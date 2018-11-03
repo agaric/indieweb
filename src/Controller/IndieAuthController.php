@@ -344,7 +344,8 @@ class IndieAuthController extends ControllerBase {
           }
         }
         catch (\Exception $e) {
-          $message = $this->t('Unknown user, please try again.');
+          // TODO add error message
+          $message = $this->t('Unknown user, please try again. : @message', ['@message' => $e->getMessage()]);
         }
       }
       else {

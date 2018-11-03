@@ -108,7 +108,10 @@ class IndieAuthTest extends IndiewebBrowserTestBase {
     $this->assertSession()->addressEquals('user/login');
 
     // Use test login page.
+    $authorization_endpoint = Url::fromRoute('indieweb_test.indieauth.login.endpoint', [], ['absolute' => TRUE])->toString();
     $domain = Url::fromroute('indieweb_test.indieauth.discover_page_one', [], ['absolute' => TRUE])->toString();
+    $this->drupalGet($domain);
+    $this->assertSession()->responseContains($authorization_endpoint);
     $edit = ['domain' => $domain];
     $this->drupalGet('indieauth-test/login');
     $this->assertSession()->responseNotContains('Map your domain with your current user.');
@@ -203,7 +206,7 @@ class IndieAuthTest extends IndiewebBrowserTestBase {
    * @throws \Drupal\Core\Entity\EntityStorageException
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
-  public function testBuiltInServer() {
+  public function _testBuiltInServer() {
 
     $this->httpClient = $this->container->get('http_client_factory')
       ->fromOptions(['base_uri' => $this->baseUrl]);
