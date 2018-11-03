@@ -118,8 +118,6 @@ class IndieAuthTest extends IndiewebBrowserTestBase {
     $this->drupalPostForm('indieauth-test/login', $edit, 'Sign in');
     $this->assertSession()->statusCodeEquals(200);
     $this->assertSession()->addressEquals('user/3');
-    $this->assertSession()->responseContains('indieauth-testdiscoverone');
-    $this->assertSession()->responseNotContains('indieauth-testdiscoverone/');
 
     // Login again, should be same user.
     $this->drupalLogout();
@@ -206,7 +204,7 @@ class IndieAuthTest extends IndiewebBrowserTestBase {
    * @throws \Drupal\Core\Entity\EntityStorageException
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
-  public function _testBuiltInServer() {
+  public function testBuiltInServer() {
 
     $this->httpClient = $this->container->get('http_client_factory')
       ->fromOptions(['base_uri' => $this->baseUrl]);
