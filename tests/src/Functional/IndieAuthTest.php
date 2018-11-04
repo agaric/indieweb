@@ -54,7 +54,7 @@ class IndieAuthTest extends IndiewebBrowserTestBase {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function _testIndieAuth() {
+  public function testIndieAuth() {
 
     // ------------------------------------------------------------------------
     // Header link expose.
