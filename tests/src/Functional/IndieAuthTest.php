@@ -342,13 +342,25 @@ class IndieAuthTest extends IndiewebBrowserTestBase {
 
     // -------------------------------------------------------
     // Authorize as a user which is authenticated already.
+    // No 'response_type' in this request as that's optional.
     // -------------------------------------------------------
 
     $this->drupalLogout();
     $this->drupalLogin($this->indiewebAuthorizedUser2);
+    unset($options['query']['response_type']);
     $this->drupalGet($auth_path, $options);
     // Simply seeing the authorize screen is good enough.
     $this->assertSession()->responseContains('would like to access your site');
+
+    // -------------------------------------------------------
+    // Authorize as an anonymous user
+    // No 'response_type' in this request as that's optional.
+    // -------------------------------------------------------
+
+    $this->drupalLogout();
+    $this->drupalGet($auth_path, $options);
+    // Simply seeing the user login screen is good enough.
+    $this->assertSession()->responseContains('Login first with your account. You will be redirected to the authorize screen on success.');
   }
 
   /**
