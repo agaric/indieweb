@@ -205,7 +205,7 @@ class WebmentionTest extends IndiewebBrowserTestBase {
       'p_summary' => 'field_summary',
     ];
     $this->drupalPostForm('admin/config/services/indieweb/microformats', $edit, 'Save configuration');
-    $this->configureWebmention(['webmention_internal' => TRUE, 'pingback_internal' => TRUE]);
+    $this->configureWebmention(['webmention_internal' => TRUE, 'pingback_internal' => TRUE, 'webmention_notify' => FALSE, 'pingback_notify' => FALSE]);
     $this->drupalLogout();
 
     $this->drupalGet('<front>');
@@ -244,7 +244,7 @@ class WebmentionTest extends IndiewebBrowserTestBase {
     $this->processWebmentions();
     $this->assertNumberOfWebmentions(1, 'webmention');
     $this->drupalLogin($this->adminUser);
-    $this->configureWebmention(['webmention_internal_handler' => 'cron', 'webmention_internal' => TRUE]);
+    $this->configureWebmention(['webmention_internal_handler' => 'cron', 'webmention_internal' => TRUE, 'webmention_notify' => FALSE]);
     $this->drupalLogout();
     $this->processWebmentions();
     $this->assertNumberOfWebmentions(0, 'webmention');
