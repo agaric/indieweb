@@ -17,13 +17,6 @@ class IndieAuthTest extends IndiewebBrowserTestBase {
   protected $header_link_token_endpoint = '<link rel="token_endpoint" href="https://tokens.indieauth.com/token" />';
 
   /**
-   * The HTTP client.
-   *
-   * @var \GuzzleHttp\ClientInterface
-   */
-  protected $httpClient;
-
-  /**
    * An indieweb authorized user.
    *
    * @var \Drupal\Core\Session\AccountInterface
