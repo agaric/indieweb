@@ -12,7 +12,7 @@ use Drupal\Core\Form\FormStateInterface;
  * Plugin implementation of the 'entity reference label with class' formatter.
  *
  * @FieldFormatter(
- *   id = "entity_reference_label_p_category_class",
+ *   id = "entity_reference_label_microformat",
  *   label = @Translation("Label link with microformat class"),
  *   description = @Translation("Display the label of the referenced entities with a p-category class or p-author h-card classes."),
  *   field_types = {
