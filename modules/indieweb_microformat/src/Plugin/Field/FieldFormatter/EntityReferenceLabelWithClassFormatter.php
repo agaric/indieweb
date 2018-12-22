@@ -24,7 +24,7 @@ class EntityReferenceLabelWithClassFormatter extends EntityReferenceFormatterBas
   /**
    * {@inheritdoc}
    */
-  public state function defaultSettings() {
+  public static function defaultSettings() {
     return [
       'microformat_class' => 'p-category',
     ] + parent::defaultSettings();
