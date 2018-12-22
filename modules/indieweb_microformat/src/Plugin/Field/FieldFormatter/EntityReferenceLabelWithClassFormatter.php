@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Exception\UndefinedLinkTemplateException;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldFormatter\EntityReferenceFormatterBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Plugin implementation of the 'entity reference label with class' formatter.
