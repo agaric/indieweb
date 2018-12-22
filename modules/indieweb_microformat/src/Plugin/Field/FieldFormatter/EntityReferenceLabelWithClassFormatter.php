@@ -89,6 +89,7 @@ class EntityReferenceLabelWithClassFormatter extends EntityReferenceFormatterBas
         }
       }
 
+      $settings = $this->getSettings();
       if ($output_as_link && isset($uri) && !$entity->isNew()) {
         $elements[$delta] = [
           '#type' => 'link',
