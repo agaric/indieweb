@@ -39,8 +39,8 @@ class EntityReferenceLabelWithClassFormatter extends EntityReferenceFormatterBas
     $elements['microformat_class'] = [
       '#type' => 'select',
       '#options' => [
-        'p-category' => $this->('Category'),
-        'p-author h-card' => $this->('Author'),
+        'p-category' => $this->t('Category'),
+        'p-author h-card' => $this->t('Author'),
       ],
       '#title' => t('Class'),
       '#default_value' => $this->getSetting('microformat_class'),
