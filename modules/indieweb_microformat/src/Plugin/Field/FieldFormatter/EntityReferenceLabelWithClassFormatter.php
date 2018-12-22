@@ -13,8 +13,8 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * @FieldFormatter(
  *   id = "entity_reference_label_p_category_class",
- *   label = @Translation("Label link with p-category class"),
- *   description = @Translation("Display the label of the referenced entities with a p-category class."),
+ *   label = @Translation("Label link with microformat class"),
+ *   description = @Translation("Display the label of the referenced entities with a p-category class or p-author h-card classes."),
  *   field_types = {
  *     "entity_reference"
  *   }
