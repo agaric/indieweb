@@ -24,9 +24,43 @@ class EntityReferenceLabelWithClassFormatter extends EntityReferenceFormatterBas
   /**
    * {@inheritdoc}
    */
+  public state function defaultSettings() {
+    return [
+      'microformat_class' => 'p-category',
+    ] + parent::defaultSettings();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $elements = parent::settingsForm($form, $form_state);
+
+    $elements['microformat_class'] = [
+      '#type' => 'select',
+      '#options' => [
+        'p-category' => $this->('Category'),
+        'p-author h-card' => $this->('Author'),
+      ],
+      '#title' => t('Class'),
+      '#default_value' => $this->getSetting('microformat_class'),
+    ];
+
+    return $elements;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function settingsSummary() {
     $summary = [];
-    $summary[] = $this->t('Renders the label as link with p-category class.');
+
+    $settings = $this->getSettings();
+
+    if (!empty($settings['microformat_class'])) {
+      $summary[] = $this->t('Renders the label as link with @class class.', ['@class' => $settings['microformat_class']]);
+    }
+
     return $summary;
   }
 
@@ -59,7 +93,7 @@ class EntityReferenceLabelWithClassFormatter extends EntityReferenceFormatterBas
           '#type' => 'link',
           '#title' => $label,
           '#url' => $uri,
-          '#attributes' => ['class' => ['p-category']],
+          '#attributes' => ['class' => $settings['microformat_class']],
           '#options' => $uri->getOptions(),
         ];
 
