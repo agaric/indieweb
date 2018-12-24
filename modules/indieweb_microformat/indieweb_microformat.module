@@ -132,6 +132,8 @@ function indieweb_microformat_preprocess_node(&$variables) {
       else {
         $variables['metadata'] = ['#markup' => $metadata];
       }
+
+      $variables['iso_datetime'] = $date;
     }
   }
 
