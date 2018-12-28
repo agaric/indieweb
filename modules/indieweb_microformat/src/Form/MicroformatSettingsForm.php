@@ -169,6 +169,7 @@ class MicroformatSettingsForm extends ConfigFormBase {
       ->set('h_event', $form_state->getValue('h_event'))
       ->set('post_metadata', $form_state->getValue('post_metadata'))
       ->set('post_metadata_comment', $form_state->getValue('post_metadata_comment'))
+      ->set('provide_iso_datetime_variable', $form_state->getValue('provide_iso_datetime_variable'))
       ->set('p_name_exclude_node_type', $form_state->getValue('p_name_exclude_node_type'))
       ->set('e_content', $form_state->getValue('e_content'))
       ->set('e_content_fields', $form_state->getValue('e_content_fields'))
